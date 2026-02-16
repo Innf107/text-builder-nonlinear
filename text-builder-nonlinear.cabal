@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.39.1.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -35,11 +35,20 @@ library
       Paths_text_builder_nonlinear
   hs-source-dirs:
       src
+  default-extensions:
+      ExtendedLiterals
+      MagicHash
+      StrictData
+      UnboxedTuples
+      UnliftedDatatypes
+      UnliftedNewtypes
+      NoFieldSelectors
+      OverloadedStrings
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
     , text
-  default-language: Haskell2010
+  default-language: GHC2024
 
 executable text-builder-nonlinear-exe
   main-is: Main.hs
@@ -49,12 +58,21 @@ executable text-builder-nonlinear-exe
       Paths_text_builder_nonlinear
   hs-source-dirs:
       app
+  default-extensions:
+      ExtendedLiterals
+      MagicHash
+      StrictData
+      UnboxedTuples
+      UnliftedDatatypes
+      UnliftedNewtypes
+      NoFieldSelectors
+      OverloadedStrings
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
     , text
     , text-builder-nonlinear
-  default-language: Haskell2010
+  default-language: GHC2024
 
 test-suite text-builder-nonlinear-test
   type: exitcode-stdio-1.0
@@ -65,9 +83,21 @@ test-suite text-builder-nonlinear-test
       Paths_text_builder_nonlinear
   hs-source-dirs:
       test
+  default-extensions:
+      ExtendedLiterals
+      MagicHash
+      StrictData
+      UnboxedTuples
+      UnliftedDatatypes
+      UnliftedNewtypes
+      NoFieldSelectors
+      OverloadedStrings
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , tasty
+    , tasty-hunit
+    , tasty-quickcheck
     , text
     , text-builder-nonlinear
-  default-language: Haskell2010
+  default-language: GHC2024

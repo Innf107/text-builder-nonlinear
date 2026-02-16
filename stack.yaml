@@ -17,7 +17,7 @@
 #
 # snapshot: ./custom-snapshot.yaml
 # snapshot: https://example.com/snapshots/2024-01-01.yaml
-snapshot:
+snapshot: # nightly-2025-12-20
   url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/24/30.yaml
 
 # User packages to be built.

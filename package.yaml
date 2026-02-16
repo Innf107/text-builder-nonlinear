@@ -58,3 +58,18 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - text-builder-nonlinear
+    - tasty
+    - tasty-hunit
+    - tasty-quickcheck
+
+language: GHC2024
+
+default-extensions:
+- ExtendedLiterals
+- MagicHash
+- StrictData
+- UnboxedTuples
+- UnliftedDatatypes
+- UnliftedNewtypes
+- NoFieldSelectors
+- OverloadedStrings
