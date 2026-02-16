@@ -1,4 +1,5 @@
 {-# LANGUAGE GHC2024 #-}
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ExtendedLiterals #-}
 {-# LANGUAGE MagicHash #-}
 {-# LANGUAGE StrictData #-}
@@ -9,10 +10,10 @@
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# OPTIONS_GHC -Wno-partial-fields #-}
 
-module MutableBuilder (MutableBuilder, newWithCapacity, fillSize, addByte, copyNonOverlappingUnsafe, copyToByteArrayUnchecked, copyAllToByteArrayUnchecked, debugBuilder, addText) where
+module MutableBuilder (MutableBuilder, newWithCapacity, fillSize, addByte, copyNonOverlappingUnsafe, copyToByteArrayUnchecked, copyAllToByteArrayUnchecked, debugBuilder, addText, toText) where
 
 import Data.Array.Byte (ByteArray (ByteArray), MutableByteArray (..))
-import GHC.Exts (Int (I#), Int#, MutableByteArray#, State#, Word8#, copyByteArray#, copyMutableByteArrayNonOverlapping#, getSizeofMutableByteArray#, newByteArray#, resizeMutableByteArray#, writeWord8Array#, (+#))
+import GHC.Exts (Int (I#), Int#, MutableByteArray#, State#, Word8#, copyByteArray#, copyMutableByteArray#, copyMutableByteArrayNonOverlapping#, getSizeofMutableByteArray#, newByteArray#, resizeMutableByteArray#, unsafeFreezeByteArray#, writeWord8Array#, (+#))
 import GHC.ST (ST (..))
 import UnboxedIntRef (UnboxedIntRef (..), UnboxedIntRef#)
 import UnboxedIntRef qualified
@@ -49,6 +50,8 @@ newWithCapacity (I# initialSize) = do
     UnboxedIntRef fillSize <- UnboxedIntRef.new 0
     pure (MkMutableBuilder{byteArrayRef, fillSize})
 
+-- | Apply an action to the inner buffer and resize it if necessary.
+-- The passed in size needs to be exactly the number of bytes that will be written to the buffer
 unsafeModify :: MutableBuilder s -> Int# -> (MutableByteArray# s -> Int# -> ST s ()) -> ST s ()
 unsafeModify MkMutableBuilder{byteArrayRef, fillSize} writtenAmount action = do
     (MutableByteArray byteArray) <- MutableByteArrayRef.read byteArrayRef
@@ -62,7 +65,7 @@ unsafeModify MkMutableBuilder{byteArrayRef, fillSize} writtenAmount action = do
         then
             action byteArray nextIndex
         else ST $ \s -> do
-            let !(I# newCapacity) = capacity * resizeFactor
+            let !(I# newCapacity) = (size + I# writtenAmount) * resizeFactor
             let !(# s', newByteArray #) = resizeMutableByteArray# byteArray newCapacity s
             unST s' $ do
                 MutableByteArrayRef.write byteArrayRef newByteArray
@@ -120,7 +123,31 @@ copyAllToByteArrayUnchecked MkMutableBuilder{byteArrayRef, fillSize} targetArray
         let s' = copyMutableByteArrayNonOverlapping# byteArray 0# targetArray targetOffset length s
         (# s', () #)
 
-debugBuilder :: MutableBuilder s -> String
-debugBuilder (MkMutableBuilder{byteArrayRef, fillSize}) = unsafePerformIO $ unsafeSTToIO $ do
+debugBuilder :: MutableBuilder s -> ST s String
+debugBuilder (MkMutableBuilder{byteArrayRef, fillSize}) = do
     size <- UnboxedIntRef.read fillSize
-    pure ("{ contents=<abstract>, fillSize = " <> show size <> " }")
+    MutableByteArray array <- MutableByteArrayRef.read byteArrayRef
+    capacity <- ST \s -> let !(# s', size #) = getSizeofMutableByteArray# array s in (# s', I# size #)
+
+    frozenArray <- freezeCopyOfMutableByteArray array
+
+    pure ("{ fillSize = " <> show size <> ", capacity = " <> show capacity <> ", contents = " <> show frozenArray <> " }")
+
+freezeCopyOfMutableByteArray :: MutableByteArray# s -> ST s ByteArray
+freezeCopyOfMutableByteArray mutableByteArray = do
+    ST \s -> do
+        let !(# s', size #) = getSizeofMutableByteArray# mutableByteArray s
+        let !(# s'', finalArray #) = newByteArray# size s'
+        let s''' = copyMutableByteArray# mutableByteArray 0# finalArray 0# size s''
+        let !(# s'''', frozenByteArray #) = unsafeFreezeByteArray# finalArray s'''
+        (# s'''', (ByteArray frozenByteArray) #)
+
+toText :: MutableBuilder s -> ST s Text
+toText MkMutableBuilder{byteArrayRef, fillSize} = do
+    I# size <- UnboxedIntRef.read fillSize
+    MutableByteArray byteArray <- MutableByteArrayRef.read byteArrayRef
+    ST \s -> do
+        let !(# s', finalArray #) = newByteArray# size s
+        let s'' = copyMutableByteArray# byteArray 0# finalArray 0# size s'
+        let !(# s''', frozenByteArray #) = unsafeFreezeByteArray# finalArray s''
+        (# s''', Text.Internal.Text (ByteArray frozenByteArray) 0 (I# size) #)

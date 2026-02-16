@@ -83,8 +83,7 @@ debugBuilder (MkBuilder (# ownLength, totalSize, builder, slices #)) =
         <> show (I# ownLength)
         <> ", totalSize = "
         <> show (I# totalSize)
-        <> ", builder = "
-        <> MutableBuilder.debugBuilder builder
+        <> ", builder = <abstract>"
         <> ", slices = "
         <> debugPreviousSlices slices
         <> " }"
@@ -93,7 +92,7 @@ debugPreviousSlices :: PreviousSlices -> String
 debugPreviousSlices = \case
     NoSlices -> "NoSlices"
     Slice{builder, sharedPrefix, tail} ->
-        "Slice { builder = " <> MutableBuilder.debugBuilder builder <> ", sharedPrefix = " <> show (I# sharedPrefix) <> "} -> " <> debugPreviousSlices tail
+        "Slice { builder = <abstract>" <> ", sharedPrefix = " <> show (I# sharedPrefix) <> "} -> " <> debugPreviousSlices tail
     FixedChunk{fixedText, tail} ->
         "FixedChunk { fixedText = " <> show fixedText <> "} -> " <> debugPreviousSlices tail
     Concat left right ->
@@ -155,8 +154,8 @@ addText text builder@(MkBuilder (# ownSize, totalSize, sharedBuffer, previousSli
     if I# textSize < fixedChunkThreshold
         then unsafeModify builder textSize $ \mutable -> MutableBuilder.addText mutable text
         else do
-            let newBuffer = unsafePerformIO $ stToIO $ MutableBuilder.newWithCapacity minBufferCapacity
-            let slices = FixedChunk text (Slice sharedBuffer ownSize previousSlices)
+            let !newBuffer = unsafePerformIO $ stToIO $ MutableBuilder.newWithCapacity minBufferCapacity
+            let !slices = FixedChunk text (Slice sharedBuffer ownSize previousSlices)
 
             MkBuilder (# 0#, totalSize +# textSize, newBuffer, slices #)
 
@@ -182,14 +181,16 @@ toText (MkBuilder (# ownSize, totalSize, lastBuffer, previousSlices #)) = unsafe
             indexAfterRight <- writeSlices finalArray indexAfterLeft right
             pure indexAfterRight
         FixedChunk{fixedText, tail} -> do
+            I# ownIndex <- writeSlices finalArray index tail
             let !(Text.Internal.Text (ByteArray textBuffer) (I# textOffset) (I# textLength)) = fixedText
             ST $ \s -> do
-                let s' = copyByteArray# textBuffer textOffset finalArray index textLength s
+                let s' = copyByteArray# textBuffer textOffset finalArray ownIndex textLength s
                 (# s', () #)
-            writeSlices finalArray (index +# textLength) tail
+            pure (I# (ownIndex +# textLength))
         Slice{builder, sharedPrefix, tail} -> do
-            MutableBuilder.copyToByteArrayUnchecked builder finalArray index sharedPrefix
-            writeSlices finalArray (index +# sharedPrefix) tail
+            I# ownIndex <- writeSlices finalArray index tail
+            MutableBuilder.copyToByteArrayUnchecked builder finalArray ownIndex sharedPrefix
+            pure (I# (ownIndex +# sharedPrefix))
 
     writeLastBuffer :: MutableByteArray# RealWorld -> Int -> ST RealWorld ()
     writeLastBuffer finalArray (I# index) = do
