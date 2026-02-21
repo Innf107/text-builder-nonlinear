@@ -44,6 +44,7 @@ library
       UnliftedNewtypes
       NoFieldSelectors
       OverloadedStrings
+      CPP
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
@@ -67,6 +68,7 @@ executable text-builder-nonlinear-exe
       UnliftedNewtypes
       NoFieldSelectors
       OverloadedStrings
+      CPP
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
@@ -92,6 +94,7 @@ test-suite text-builder-nonlinear-test
       UnliftedNewtypes
       NoFieldSelectors
       OverloadedStrings
+      CPP
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
@@ -99,5 +102,37 @@ test-suite text-builder-nonlinear-test
     , tasty-hunit
     , tasty-quickcheck
     , text
+    , text-builder-nonlinear
+  default-language: GHC2024
+
+benchmark text-builder-nonlinear-bench
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      BenchPrettyListShortText
+      Paths_text_builder_nonlinear
+  autogen-modules:
+      Paths_text_builder_nonlinear
+  hs-source-dirs:
+      bench
+  default-extensions:
+      ExtendedLiterals
+      MagicHash
+      StrictData
+      UnboxedTuples
+      UnliftedDatatypes
+      UnliftedNewtypes
+      NoFieldSelectors
+      OverloadedStrings
+      CPP
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N -O2 -main-is Main
+  build-depends:
+      base >=4.7 && <5
+    , bytestring
+    , tasty
+    , tasty-bench
+    , text
+    , text-builder
+    , text-builder-linear
     , text-builder-nonlinear
   default-language: GHC2024

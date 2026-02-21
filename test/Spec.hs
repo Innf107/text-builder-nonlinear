@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE NumDecimals #-}
 
 import Test.Tasty (TestTree)
 import Test.Tasty qualified as Tasty
@@ -44,7 +45,7 @@ builderUnitTests =
         , HUnit.testCase "persistent short" do
             let builder = Builder.addText "xxx" (Builder.unboxBuilder Builder.empty)
             let derived = [MkBoxedBuilder $ Builder.addText "aaa" builder, MkBoxedBuilder $ Builder.addText "bbb" builder, MkBoxedBuilder $ Builder.addText "ddd" (Builder.addText "ccc" builder)]
-            map (\(MkBoxedBuilder builder) -> Builder.toText builder) derived @=? ["xxxaaa", "xxxbbb", "xxxcccddd"]
+            map (\(MkBoxedBuilder builder) -> Builder.toText builder) derived @?= ["xxxaaa", "xxxbbb", "xxxcccddd"]
             {-, HUnit.testCase "failing quickcheck" do
                 let appendTexts builder = \case
                         [] -> Builder.toText builder
@@ -52,6 +53,11 @@ builderUnitTests =
                  in do
                         let texts = ["", "a"]
                         mconcat texts @=? appendTexts (Builder.unboxBuilder Builder.empty) texts -}
+        , HUnit.testCase "many small texts" do
+            let go builder = \case
+                    (0 :: Int) -> Builder.toText builder
+                    n -> go (Builder.addText "abcdef" builder) (n - 1)
+            go (Builder.unboxBuilder Builder.empty) 1e6 @?= Text.replicate 1e6 "abcdef"
         ]
 
 builderPropertyTests :: TestTree

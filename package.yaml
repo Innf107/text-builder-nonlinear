@@ -61,6 +61,22 @@ tests:
     - tasty
     - tasty-hunit
     - tasty-quickcheck
+benchmarks:
+  text-builder-nonlinear-bench:
+    main: Main
+    source-dirs: bench
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -O2
+    dependencies:
+    - text-builder-nonlinear
+    - tasty
+    - tasty-bench
+    - text-builder-linear
+    - text-builder
+    - bytestring
 
 language: GHC2024
 
@@ -73,3 +89,4 @@ default-extensions:
 - UnliftedNewtypes
 - NoFieldSelectors
 - OverloadedStrings
+- CPP
